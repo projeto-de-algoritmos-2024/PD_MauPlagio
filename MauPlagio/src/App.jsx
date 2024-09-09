@@ -8,9 +8,11 @@ export default function App() {
 
   useEffect(() => {
     const works = MyWorks.results;
+    let combinedText = "";
     works.forEach((work) => {
-      setText2((prevText2) => prevText2 + work.fullText);
+      combinedText += work.fullText + " "; // Adiciona um espaço para separar os textos
     });
+    setText2(combinedText);
   }, []);
 
   function getAlignedSequences(seq1, seq2) {
@@ -22,12 +24,51 @@ export default function App() {
     const alignedSeq1 = [];
     const alignedSeq2 = [];
 
-    for (let i = 0; i < len1; i++) {
-      alignedSeq1.push({ char: seq1[i], match: seq1[i] === seq2[i] });
+    // Matriz de pontuação para o alinhamento de sequência
+    const dp = Array.from(Array(len1 + 1), () => Array(len2 + 1).fill(0));
+
+    // Preencher a matriz de pontuação
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        const score = seq1[i - 1] === seq2[j - 1] ? match : mismatch;
+        dp[i][j] = Math.max(
+          dp[i - 1][j - 1] + score,
+          dp[i - 1][j],
+          dp[i][j - 1]
+        );
+      }
     }
 
-    for (let j = 0; j < len2; j++) {
-      alignedSeq2.push({ char: seq2[j], match: seq1[j] === seq2[j] });
+    // Rastrear o alinhamento
+    let i = len1;
+    let j = len2;
+    while (i > 0 && j > 0) {
+      if (seq1[i - 1] === seq2[j - 1]) {
+        alignedSeq1.unshift({ char: seq1[i - 1], match: true });
+        alignedSeq2.unshift({ char: seq2[j - 1], match: true });
+        i--;
+        j--;
+      } else if (dp[i - 1][j] > dp[i][j - 1]) {
+        alignedSeq1.unshift({ char: seq1[i - 1], match: false });
+        alignedSeq2.unshift({ char: "-", match: false });
+        i--;
+      } else {
+        alignedSeq1.unshift({ char: "-", match: false });
+        alignedSeq2.unshift({ char: seq2[j - 1], match: false });
+        j--;
+      }
+    }
+
+    // Adicionar os caracteres restantes
+    while (i > 0) {
+      alignedSeq1.unshift({ char: seq1[i - 1], match: false });
+      alignedSeq2.unshift({ char: "-", match: false });
+      i--;
+    }
+    while (j > 0) {
+      alignedSeq1.unshift({ char: "-", match: false });
+      alignedSeq2.unshift({ char: seq2[j - 1], match: false });
+      j--;
     }
 
     return { alignedSeq1, alignedSeq2 };
