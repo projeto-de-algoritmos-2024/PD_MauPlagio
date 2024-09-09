@@ -9,7 +9,7 @@ export default function App() {
   useEffect(() => {
     const works = MyWorks.results;
     works.forEach((work) => {
-      setText2(work.fullText);
+      setText2((prevText2) => prevText2 + work.fullText);
     });
   }, []);
 
